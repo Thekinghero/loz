@@ -3,23 +3,28 @@ name: SSH Ubuntu 22.04
 on: [workflow_dispatch]
 
 jobs:
-  build:
+  ssh:
     runs-on: ubuntu-22.04
     steps:
-      - name: Start SSH via ngrok
+      - name: Setup SSH and ngrok
         run: |
           sudo apt update
           sudo apt install -y openssh-server wget unzip
-          sudo service ssh start
+
+          echo "PermitRootLogin yes" | sudo tee -a /etc/ssh/sshd_config
+          echo "PasswordAuthentication yes" | sudo tee -a /etc/ssh/sshd_config
+          echo "PermitEmptyPasswords no" | sudo tee -a /etc/ssh/sshd_config
+          echo "root:123456" | sudo chpasswd
+
+          sudo service ssh restart
 
           wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip
           unzip ngrok-stable-linux-amd64.zip
           chmod +x ngrok
 
-          echo "${{ secrets.NGROK_AUTH_TOKEN }}" > ngrok_token
-          ./ngrok authtoken $(cat ngrok_token)
-          ./ngrok tcp 22 > ngrok.log &
+          ./ngrok authtoken "${{ secrets.NGROK_AUTH_TOKEN }}"
+          ./ngrok tcp 22 &
           sleep 10
-          curl -s http://127.0.0.1:4040/api/tunnels > tunnels.json
-          echo "Ngrok Tunnel Info:"
-          cat tunnels.json
+
+          curl -s http://127.0.0.1:4040/api/tunnels | tee tunnels.json
+          echo "root login = ssh root@<host> -p <port>"
