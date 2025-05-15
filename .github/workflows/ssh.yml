@@ -23,8 +23,7 @@ jobs:
           chmod +x ngrok
 
           ./ngrok authtoken "${{ secrets.NGROK_AUTH_TOKEN }}"
-          ./ngrok tcp 22 &
+          ./ngrok tcp 22 > /dev/null &
           sleep 10
 
           curl -s http://127.0.0.1:4040/api/tunnels | tee tunnels.json
-          echo "root login = ssh root@<host> -p <port>"
